@@ -13,14 +13,34 @@ def connect():
 
 def deleteMatches():
     """Remove all the match records from the database."""
+    conn = connect()
+    db_cursor = conn.cursor()
+    query = "DELETE FROM matches;"
+    db_cursor.execute(query)
+    conn.commit()
+    conn.close()
 
 
 def deletePlayers():
     """Remove all the player records from the database."""
+    conn = connect()
+    db_cursor = conn.cursor()
+    query = "DELETE FROM players;"
+    db_cursor.execute(query)
+    conn.commit()
+    conn.close()
 
 
 def countPlayers():
     """Returns the number of players currently registered."""
+    conn = connect()
+    db_cursor = conn.cursor()
+    query = "SELECT count(*) FROM players;"
+    db_cursor.execute(query)
+    for record in db_cursor:
+        return record[0]
+    conn.commit()
+    conn.close()
 
 
 def registerPlayer(name):
@@ -32,6 +52,12 @@ def registerPlayer(name):
     Args:
       name: the player's full name (need not be unique).
     """
+    conn = connect()
+    db_cursor = conn.cursor()
+    query = "INSERT INTO players (name) VALUES (%s);"
+    db_cursor.execute(query,(name,))
+    conn.commit()
+    conn.close()
 
 
 def playerStandings():
@@ -47,6 +73,15 @@ def playerStandings():
         wins: the number of matches the player has won
         matches: the number of matches the player has played
     """
+    conn = connect()
+    db_cursor = conn.cursor()
+    query = "SELECT * FROM standings;"
+    db_cursor.execute(query)
+    records = db_cursor.fetchall()
+    print records
+    return records
+    conn.commit()
+    conn.close()
 
 
 def reportMatch(winner, loser):
@@ -56,6 +91,12 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
+    conn = connect()
+    db_cursor = conn.cursor()
+    query = "INSERT INTO matches (winner,loser) VALUES (%s,%s);"
+    db_cursor.execute(query,(winner,loser,))
+    conn.commit()
+    conn.close()
  
  
 def swissPairings():
