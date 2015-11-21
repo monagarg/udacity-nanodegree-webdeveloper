@@ -9,19 +9,15 @@
 -- Create the tournament database
 CREATE DATABASE tournament;
 
+-- Create a table 'players' to register players
 CREATE TABLE  players (id SERIAL PRIMARY KEY, name TEXT);
 
+-- Create a table 'matches' to report the outcome of a single match between two players
 CREATE TABLE matches (id SERIAL, winner INTEGER REFERENCES players(id), loser INTEGER REFERENCES players(id));
 
-INSERT INTO players (name) VALUES ('mona');
+-- Create a view 'standings' to return the current position of players, total wins, and total matches
+CREATE VIEW standings AS SELECT p.id,p.name,(SELECT count(winner) FROM matches m WHERE m.winner = p.id) AS wins, (SELECT (SELECT count(winner) FROM matches m WHERE m.winner = p.id)+(SELECT count(loser) FROM matches m WHERE m.loser=p.id)) AS matches FROM players p;
 
-INSERT INTO matches (winner,loser) VALUES (31,32)
+-- Create a view of 'initial_pairing' to help create swiss pairing
+CREATE VIEW initial_pairing AS SELECT id, sum(wins) AS total_wins FROM standings GROUP BY id ORDER BY total_wins DESC;
 
-CREATE VIEW standings AS select p.id,p.name,(select count(winner) from matches m where m.winner = p.id) as wins, (SELECT (select count(winner) from matches m where m.winner = p.id)+(select count(loser) from matches m where m.loser=p.id)) as matches from players p;
-
-select id, sum(wins) as total_wins from standings group by id order by total_wins desc;
-
-psql
-\c tournament
-\q
-\dt 
