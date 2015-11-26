@@ -15,7 +15,7 @@ def connect():
 def deleteMatches():
     """Remove all the match records from the database."""
 
-    # Create database connection
+    # Connect to the database
     conn = connect()
     db_cursor = conn.cursor()
 
@@ -33,11 +33,11 @@ def deleteMatches():
 def deletePlayers():
     """Remove all the player records from the database."""
 
-    # Create database connection
+    # Connect to the database
     conn = connect()
     db_cursor = conn.cursor()
 
-    # Create query to delete all data registered players from the players table
+    # Create query to delete all registered players from the players table
     query = "DELETE FROM players;"
 
     # Execute the query
@@ -51,10 +51,11 @@ def deletePlayers():
 def countPlayers():
     """Returns the number of players currently registered."""
 
-    # Create database connection
+    # Connect to the database
     conn = connect()
     db_cursor = conn.cursor()
 
+    # Create query to count the total number of registered users
     query = "SELECT count(*) FROM players;"
 
     # Execute the query
@@ -78,14 +79,15 @@ def registerPlayer(name):
       name: the player's full name (need not be unique).
     """
 
-    # Create database connection
+    # Connect to the database
     conn = connect()
     db_cursor = conn.cursor()
 
+    # Create query to insert players in the players table by dynamically passing the name of the player
     query = "INSERT INTO players (name) VALUES (%s);"
 
     # Execute the query
-    db_cursor.execute(query,(name,))
+    db_cursor.execute(query, (name, ))
 
     # Commit and close the connection
     conn.commit()
@@ -106,17 +108,17 @@ def playerStandings():
         matches: the number of matches the player has played
     """
 
-    # Create database connection
+    # Connect to the database
     conn = connect()
     db_cursor = conn.cursor()
 
+    # Create query to select all data from standings
     query = "SELECT * FROM standings;"
 
     # Execute the query
     db_cursor.execute(query)
 
     records = db_cursor.fetchall()
-    
     return records
 
     # Commit and close the connection
@@ -132,14 +134,15 @@ def reportMatch(winner, loser):
       loser:  the id number of the player who lost
     """
 
-    # Create database connection
+    # Connect to the database
     conn = connect()
     db_cursor = conn.cursor()
 
+    # Create query to insert a match between two players in the matches table
     query = "INSERT INTO matches (winner,loser) VALUES (%s,%s);"
 
     # Execute the query
-    db_cursor.execute(query,(winner,loser,))
+    db_cursor.execute(query, (winner, loser, ))
 
     # Commit and close the connection
     conn.commit()
@@ -162,28 +165,28 @@ def swissPairings():
         name2: the second player's name
     """
 
-    # Create database connection
+    # Connect to the database
     conn = connect()
     db_cursor = conn.cursor()
 
-    query = "SELECT DISTINCT total_wins FROM initial_pairing;"
+    # Create query to select the sum of wins of players from all the recorded matches
+    query = "SELECT DISTINCT wins FROM standings;"
 
     final_paring = []
 
-    # Execute the query
+    # Execute the query and create query to select the players with a particular number of wins
     db_cursor.execute(query)
     records = db_cursor.fetchall()
     for row in records:
-        query = "SELECT DISTINCT ip.id,p.name FROM initial_pairing ip, players p WHERE total_wins = (%s) AND ip.id = p.id;"
+        query = "SELECT id,name FROM standings WHERE wins = (%s);"
 
-        # Execute the query
-        db_cursor.execute(query,(row))
+        # Execute the query; randomize the same win players; create pairs and return the final pair list
+        db_cursor.execute(query, (row))
         record = db_cursor.fetchall()
         random.shuffle(record)
-        print record
-        if len(record)%2 == 0:
-            i=0
-            while(i<len(record)):
+        if len(record) % 2 == 0:
+            i = 0
+            while(i < len(record)):
                 record1 = record[i]+record[i+1]
                 final_paring.append(record1)
                 i = i+2
@@ -193,4 +196,3 @@ def swissPairings():
     # Commit and close the connection
     conn.commit()
     conn.close()
-
