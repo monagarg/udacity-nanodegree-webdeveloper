@@ -7,67 +7,69 @@ import psycopg2
 import random
 
 
-def connect():
+def connect(database_name="tournament"):
     """Connect to the PostgreSQL database.  Returns a database connection."""
-    return psycopg2.connect("dbname=tournament")
+    try:
+        db = psycopg2.connect("dbname={}".format(database_name))
+        cursor = db.cursor()
+        return db, cursor
+    except:
+        print("Unable to connect to the database")
 
+def disconnect(db):
+    db.commit()
+    db.close()
 
 def deleteMatches():
     """Remove all the match records from the database."""
 
     # Connect to the database
-    conn = connect()
-    db_cursor = conn.cursor()
+    db, cursor = connect()
 
     # Create query to delete all data from the matches table
-    query = "DELETE FROM matches;"
+    query = "TRUNCATE matches;"
 
     # Execute the query
-    db_cursor.execute(query)
+    cursor.execute(query)
 
     # Commit and close the connection
-    conn.commit()
-    conn.close()
+    disconnect(db)
 
 
 def deletePlayers():
     """Remove all the player records from the database."""
 
     # Connect to the database
-    conn = connect()
-    db_cursor = conn.cursor()
+    db, cursor = connect()
 
     # Create query to delete all registered players from the players table
     query = "DELETE FROM players;"
 
     # Execute the query
-    db_cursor.execute(query)
+    cursor.execute(query)
 
     # Commit and close the connection
-    conn.commit()
-    conn.close()
+    disconnect(db)
 
 
 def countPlayers():
     """Returns the number of players currently registered."""
 
     # Connect to the database
-    conn = connect()
-    db_cursor = conn.cursor()
+    db, cursor = connect()
 
     # Create query to count the total number of registered users
     query = "SELECT count(*) FROM players;"
 
     # Execute the query
-    db_cursor.execute(query)
+    cursor.execute(query)
 
-    for record in db_cursor:
+    for record in cursor:
         return record[0]
 
     # Commit and close the connection
-    conn.commit()
-    conn.close()
-
+    disconnect(db)
+    
 
 def registerPlayer(name):
     """Adds a player to the tournament database.
@@ -80,18 +82,16 @@ def registerPlayer(name):
     """
 
     # Connect to the database
-    conn = connect()
-    db_cursor = conn.cursor()
+    db, cursor = connect()
 
     # Create query to insert players in the players table by dynamically passing the name of the player
     query = "INSERT INTO players (name) VALUES (%s);"
 
     # Execute the query
-    db_cursor.execute(query, (name, ))
+    cursor.execute(query, (name, ))
 
     # Commit and close the connection
-    conn.commit()
-    conn.close()
+    disconnect(db)
 
 
 def playerStandings():
@@ -109,21 +109,19 @@ def playerStandings():
     """
 
     # Connect to the database
-    conn = connect()
-    db_cursor = conn.cursor()
+    db, cursor = connect()
 
     # Create query to select all data from standings
     query = "SELECT * FROM standings;"
 
     # Execute the query
-    db_cursor.execute(query)
+    cursor.execute(query)
 
-    records = db_cursor.fetchall()
+    records = cursor.fetchall()
     return records
 
     # Commit and close the connection
-    conn.commit()
-    conn.close()
+    disconnect(db)
 
 
 def reportMatch(winner, loser):
@@ -135,18 +133,16 @@ def reportMatch(winner, loser):
     """
 
     # Connect to the database
-    conn = connect()
-    db_cursor = conn.cursor()
+    db, cursor = connect()
 
     # Create query to insert a match between two players in the matches table
     query = "INSERT INTO matches (winner,loser) VALUES (%s,%s);"
 
     # Execute the query
-    db_cursor.execute(query, (winner, loser, ))
+    cursor.execute(query, (winner, loser, ))
 
     # Commit and close the connection
-    conn.commit()
-    conn.close()
+    disconnect(db)
  
  
 def swissPairings():
@@ -166,8 +162,7 @@ def swissPairings():
     """
 
     # Connect to the database
-    conn = connect()
-    db_cursor = conn.cursor()
+    db, cursor = connect()
 
     # Create query to select the sum of wins of players from all the recorded matches
     query = "SELECT DISTINCT wins FROM standings;"
@@ -175,24 +170,19 @@ def swissPairings():
     final_paring = []
 
     # Execute the query and create query to select the players with a particular number of wins
-    db_cursor.execute(query)
-    records = db_cursor.fetchall()
+    cursor.execute(query)
+    records = cursor.fetchall()
     for row in records:
         query = "SELECT id,name FROM standings WHERE wins = (%s);"
 
-        # Execute the query; randomize the same win players; create pairs and return the final pair list
-        db_cursor.execute(query, (row))
-        record = db_cursor.fetchall()
+        # Execute the query; randomize the same win players; create pairs and return the final pairs list
+        cursor.execute(query, (row))
+        record = cursor.fetchall()
         random.shuffle(record)
-        if len(record) % 2 == 0:
-            i = 0
-            while(i < len(record)):
-                record1 = record[i]+record[i+1]
-                final_paring.append(record1)
-                i = i+2
 
-    return final_paring
+        for p1, p2 in zip(record[0::2], record[1::2]):
+            final_paring.append((p1[0], p1[1], p2[0], p2[1]))
 
     # Commit and close the connection
-    conn.commit()
-    conn.close()
+    disconnect(db)
+    return final_paring
