@@ -61,14 +61,14 @@ def countPlayers():
     # Create query to count the total number of registered users
     query = "SELECT count(*) FROM players;"
 
-    # Execute the query
+    # Execute the query and fetch the result
     cursor.execute(query)
-
-    for record in cursor:
-        return record[0]
+    count_players = cursor.fetchone()[0]
 
     # Commit and close the connection
     disconnect(db)
+
+    return count_players
     
 
 def registerPlayer(name):
@@ -118,10 +118,11 @@ def playerStandings():
     cursor.execute(query)
 
     records = cursor.fetchall()
-    return records
 
     # Commit and close the connection
     disconnect(db)
+
+    return records
 
 
 def reportMatch(winner, loser):
@@ -168,6 +169,7 @@ def swissPairings():
     query = "SELECT DISTINCT wins FROM standings;"
 
     final_paring = []
+    remaining_player = 0
 
     # Execute the query and create query to select the players with a particular number of wins
     cursor.execute(query)
@@ -178,10 +180,16 @@ def swissPairings():
         # Execute the query; randomize the same win players; create pairs and return the final pairs list
         cursor.execute(query, (row))
         record = cursor.fetchall()
+
+        if remaining_player:
+            record.append(remaining_player)
+
         random.shuffle(record)
 
         for p1, p2 in zip(record[0::2], record[1::2]):
             final_paring.append((p1[0], p1[1], p2[0], p2[1]))
+        if len(record) % 2 != 0:
+            remaining_player = record[len(record)-1]
 
     # Commit and close the connection
     disconnect(db)
