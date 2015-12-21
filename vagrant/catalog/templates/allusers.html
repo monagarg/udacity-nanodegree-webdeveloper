@@ -1,0 +1,22 @@
+<html>
+
+<body>
+
+	<h1>All Users</h1>
+
+
+	{% for user in users %}
+
+	<div>
+
+		{{user.user_id}}
+		{{user.email_id}}
+		{{user.name}}
+
+	</div>
+
+	{% endfor %}
+
+</body>
+
+</html>

@@ -1,0 +1,20 @@
+<html>
+
+<body>
+
+	<h1>All Listings</h1>
+
+
+	{% for product in products %}
+
+	<div>
+
+		<a href='{{url_for('productDetails', product_id = product.product_id) }}'>{{product.name}}</a>
+
+	</div>
+
+	{% endfor %}
+
+</body>
+
+</html>
