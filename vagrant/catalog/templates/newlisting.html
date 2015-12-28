@@ -1,26 +1,55 @@
-<html>
-<body>
-<h1> New Product for Rent </h1>
+{% extends "main.html" %}
+{% block content %}
+{% include "header.html" %}
+	<div class="row divider green">
+		<div class="col-md-12"></div>
+	</div>
+	<div class="row banner menu">
+		<div class="col-md-11 col-md-offset-1 padding-none">
+			<h1>New Listing</h1>
+		</div>
+	</div>
 
-<form action="{{url_for('newListing', user_id=user_id )}}" method = 'POST'>
+<div class="row">
+		<div class="col-md-6 col-md-offset-1 padding-top">
+			<form action="{{url_for('newListing' )}}" method = "post">
+				<div class="form-group">
+					<label for="name">Name:</label>
+					<input type ="text" class="form-control" name="name">
+					
+					<label for="name">Description:</label>
+					<input type ="text" class="form-control" name="description">
+					
+					<label for="name">Category:</label>
+					<input type ="text" class="form-control" name="category">
 
-Name: <input type='text' size='30' name='name'>
+					<label for="name">Identifier:</label>
+					<input type ="text" class="form-control" name="identifier">
 
-<p>Description: <input type='text' size='30' name='description'>
+					<label for="name">Identifier Value:</label>
+					<input type ="text" class="form-control" name="identifier_value">
 
-<p>Category: <input type='text' size='30' name='category'>
+					<label for="name">Deposit:</label>
+					<input type ="text" class="form-control" name="deposit">
 
-<p>Identifier: <input type='text' size='30' name='identifier'>
+					<label for="name">Days available to rent:</label>
+					<input type ="text" class="form-control" name="max_days">
 
-<p>Identifier Value: <input type='text' size='30' name='identifier_value'>
+					<div class="padding-bottom"></div>
+					<button type="submit" class="btn btn-default" id="submit" type="submit">
+					<span class="glyphicon glyphicon-ok" aria-hidden="true"></span>Create</button>
+					
+				</div>
+			</form>
 
-<p>Deposit: <input type='text' size='30' name='deposit'>
+				<div>
+					<a href = '{{url_for('myListings')}}'>
+						<button class="btn btn-default delete">
+						<span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Cancel</button>
+					</a>
+				</div>
 
-<p>Max Days: <input type='text' size='30' name='max_days'>
+		</div>
+	</div>
 
-<p> <input type='submit' value='Create'>
-
-</form>
-
-</body>
-</html>
+{% endblock %}

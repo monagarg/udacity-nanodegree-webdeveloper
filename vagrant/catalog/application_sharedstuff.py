@@ -3,8 +3,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database_setup_sharedstuff import User, Base, Product, Listing
 from flask import session as login_session
-import random, string
-
+import random
+import string
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 import httplib2
@@ -13,11 +13,12 @@ from flask import make_response
 import requests
 
 app = Flask(__name__)
-
 CLIENT_ID = json.loads(
 	open('client_secrets.json', 'r').read())['web']['client_id']
 APPLICATION_NAME = "Shared Stuff Application"
 
+
+# Connect to Database and create database session
 engine = create_engine('sqlite:///sharedstuff.db')
 Base.metadata.bind = engine
 
@@ -25,13 +26,15 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 
+# Create anti-forgery state token
 @app.route('/login')
 def showLogin():
-	state = ''.join(random.choice(string.ascii_uppercase + string.digits) 
-		for x in xrange(32))
+	state = ''.join(
+		random.choice(string.ascii_uppercase + string.digits) for x in xrange(32))
 	login_session['state'] = state
 	#return "The current session state is %s" %login_session['state']
 	return render_template('login.html', STATE=state)
+
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
@@ -56,7 +59,6 @@ def gconnect():
 
 	# Check that the access token is valid.
 	access_token = credentials.access_token
-	print access_token
 	url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'
 		   % access_token)
 	h = httplib2.Http()
@@ -82,25 +84,17 @@ def gconnect():
 		response.headers['Content-Type'] = 'application/json'
 		return response
 
-	# stored_credentials = login_session.get('credentials')
-	# stored_gplus_id = login_session.get('gplus_id')
-	# if stored_credentials is not None and gplus_id == stored_gplus_id:
-
-	stored_access_token = login_session.get('access_token')
+	stored_credentials = login_session.get('credentials')
 	stored_gplus_id = login_session.get('gplus_id')
-	if stored_access_token is not None and gplus_id == stored_gplus_id:
+	if stored_credentials is not None and gplus_id == stored_gplus_id:
 		response = make_response(json.dumps('Current user is already connected.'),
 								 200)
 		response.headers['Content-Type'] = 'application/json'
 		return response
 
 	# Store the access token in the session for later use.
-	#login_session['credentials'] = credentials
-	login_session['access_token'] = credentials.access_token
+	login_session['credentials'] = credentials
 	login_session['gplus_id'] = gplus_id
-
-	print "***************"
-	print login_session['access_token']
 
 	# Get user info
 	userinfo_url = "https://www.googleapis.com/oauth2/v1/userinfo"
@@ -113,6 +107,12 @@ def gconnect():
 	login_session['picture'] = data["picture"]
 	login_session['email'] = data["email"]
 
+	# see if user exists, if it doesn't make a new one
+	user_id = getUserID(data["email"])
+	if user_id == 'None':
+		user_id = createUser(login_session)
+	login_session['user_id'] = user_id
+
 	output = ''
 	output += '<h1>Welcome, '
 	output += login_session['username']
@@ -122,36 +122,63 @@ def gconnect():
 	output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
 	flash("you are now logged in as %s" % login_session['username'])
 	print "done!"
+	# print login_session
 	return output
 
+# User Helper Functions
+
+
+def createUser(login_session):
+	newUser = User(name=login_session['username'], email_id=login_session[
+				   'email'])
+	session.add(newUser)
+	session.commit()
+	user = session.query(User).filter_by(email_id=login_session['email']).one()
+	return user.id
+
+
+
+def getUserInfo(user_id):
+	user = session.query(User).filter_by(user_id=user_id).one()
+	return user
+
+def getUserID(email):
+	try:
+		user = session.query(User).filter_by(email_id=email).one()
+		return user.user_id
+	except:
+		return None
+
+
+# DISCONNECT - Revoke a current user's token and reset their login_session
 @app.route('/gdisconnect')
 def gdisconnect():
-	access_token = login_session['access_token']
-	print access_token
-	print 'In gdisconnect access token is %s', access_token
-	print 'User name is: ' 
-	print login_session['username']
-	if access_token is None:
-		print 'Access Token is None'
-		response = make_response(json.dumps('Current user not connected.'), 401)
+	 # Only disconnect a connected user.
+	credentials = login_session.get('credentials')
+	if credentials is None:
+		response = make_response(
+			json.dumps('Current user not connected.'), 401)
 		response.headers['Content-Type'] = 'application/json'
 		return response
-	url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % login_session['access_token']
+	access_token = credentials.access_token
+	url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % access_token
+	print access_token
 	h = httplib2.Http()
 	result = h.request(url, 'GET')[0]
-	print 'result is '
-	print result
+	# print 'result is '
+	# print result
 	if result['status'] == '200':
-		del login_session['access_token'] 
+		del login_session['credentials']
 		del login_session['gplus_id']
 		del login_session['username']
 		del login_session['email']
 		del login_session['picture']
+
 		response = make_response(json.dumps('Successfully disconnected.'), 200)
 		response.headers['Content-Type'] = 'application/json'
-		return response
+		return redirect(url_for('allListings'))
 	else:
-	
+		# For whatever reason, the given token was invalid.
 		response = make_response(json.dumps('Failed to revoke token for given user.', 400))
 		response.headers['Content-Type'] = 'application/json'
 		return response
@@ -161,53 +188,94 @@ def gdisconnect():
 @app.route('/alllistings/')
 def allListings():
 	products = []
+	heading = "All Listings"
 
 	state = ''.join(random.choice(string.ascii_uppercase + string.digits) 
 		for x in xrange(32))
 	login_session['state'] = state
 
-	listings = session.query(Listing).filter_by(is_available = True).all()
-	for listing in listings:
-		products.append(session.query(Product).filter_by(product_id = listing.product_id).one())
-	return render_template('alllistings.html',products = products, STATE=state)
+	products = (session.query(Listing.listing_id,Listing.product_id,Listing.deposit,Listing.max_days,Listing.is_available,
+		Product.name,Product.description,Product.identifier,Product.identifier_value).join(Product)).filter(Listing.is_available == True).all()
+
+	if 'username' not in login_session:
+		return render_template('alllistingspublic.html',products = products, STATE=state)
+	else:
+		return render_template('alllistings.html',products = products, heading = heading, STATE=state)
+
+
+@app.route('/mylistings')
+def myListings():
+	products = []
+	heading = "My Listings"
+	email = login_session['email']
+	user_id = getUserID(email)
+	state = ''.join(random.choice(string.ascii_uppercase + string.digits) 
+		for x in xrange(32))
+	login_session['state'] = state
+	# listings = session.query(Listing).filter_by(user_id = user_id, is_available = True).all()
+	# for listing in listings:
+	# 	products.append(session.query(Product).filter_by(product_id = listing.product_id).one())
+
+	products = (session.query(Listing.listing_id,Listing.product_id,Listing.deposit,Listing.max_days,Listing.is_available,
+		Product.name,Product.description,Product.identifier,Product.identifier_value).join(Product)).filter(Listing.is_available == True).filter(Listing.user_id == user_id).all()
+
+	if 'username' not in login_session:
+		return render_template('alllistingspublic.html',products = products, STATE=state)
+	else:
+		return render_template('alllistings.html',products = products, heading = heading, STATE=state)
+
 
 # Task 3: Create a route for deleteMenuItem function here
 
 @app.route('/allusers/')
 def allUsers():
-	users = []
+	users = []	
 	all_users = session.query(User).all()
 	for user in all_users:
 		users.append(session.query(User).filter_by(user_id = user.user_id).one())
 	return render_template('allusers.html',users = users)
+
+@app.route('/deleteuser/')
+def delUser():
+	mona_user = session.query(User).filter_by(user_id = 3).one()
+	session.delete(mona_user)
+	session.commit()
 
 # Task 3: Create a route for deleteMenuItem function here
 
 @app.route('/products/<int:product_id>/')
 def productDetails(product_id):
 	product = session.query(Product).filter_by(product_id = product_id).one()
-	return render_template('productdetails.html',product = product)
+	listing = session.query(Listing).filter_by(product_id = product_id).one()
+	return render_template('productdetails.html',product = product, listing = listing)
 
 # Task 3: Create a route for deleteMenuItem function here
 
-@app.route('/products/<int:user_id>/new', methods=['GET', 'POST'])
-def newListing(user_id):
+@app.route('/products/new', methods=['GET', 'POST'])
+def newListing():
+	if 'username' not in login_session:
+		return redirect('/login')
+	user_id = login_session['user_id']
 	if request.method == 'POST':
 		newProduct = Product(name = request.form['name'], description = request.form['description'], category = request.form['category'], identifier = request.form['identifier'], identifier_value = request.form['identifier_value'])
 		newProductListing = Listing(deposit = request.form['deposit'], max_days = request.form['max_days'], user_id = user_id, product = newProduct)
 		session.add(newProduct)
 		session.add(newProductListing)
 		session.commit()
-		return redirect(url_for('allListings'))
+		return redirect(url_for('myListings'))
 	else:
-		return render_template('newlisting.html',user_id = user_id)
+		return render_template('newlisting.html')
 
 # Task 3: Create a route for deleteMenuItem function here
 
 @app.route('/products/<int:product_id>/edit', methods=['GET', 'POST'])
 def editListing(product_id):
+	if 'username' not in login_session:
+		return redirect('/login')
 	editedProduct = session.query(Product).filter_by(product_id=product_id).one()
 	editedList = session.query(Listing).filter_by(product_id=product_id).one()
+	if login_session['user_id'] != editedList.user_id:
+		return "<script>function myFunction() {alert('You are not authorized to edit this listing. Please create your own listing in order to edit listing details.');}</script><body onload='myFunction()''>"
 	if request.method == 'POST':
 		if request.form:
 			editedProduct.name = request.form['name']
@@ -218,8 +286,9 @@ def editListing(product_id):
 			editedList.deposit = request.form['deposit']
 			editedList.max_days = request.form['max_days']
 		session.add(editedProduct)
+		session.add(editedList)
 		session.commit()
-		return redirect(url_for('allListings'))
+		return redirect(url_for('myListings'))
 	else:
 		return render_template('editlisting.html',product_id=product_id, product=editedProduct, listing=editedList)
 
@@ -227,8 +296,12 @@ def editListing(product_id):
 
 @app.route('/products/<int:product_id>/delete', methods=['GET','POST'])
 def deleteProduct(product_id):
+	if 'username' not in login_session:
+		return redirect('/login')
 	deletedProduct = session.query(Product).filter_by(product_id=product_id).one()
 	deletedList = session.query(Listing).filter_by(product_id=product_id).one()
+	if login_session['user_id'] != deletedList.user_id:
+		return "<script>function myFunction() {alert('You are not authorized to edit this listing. Please create your own listing in order to edit listing details.');}</script><body onload='myFunction()''>"
 	if request.method == 'POST':
 		if deletedProduct.product_id:
 			deletedProduct.is_active = False
@@ -236,7 +309,7 @@ def deleteProduct(product_id):
 		session.add(deletedProduct)
 		session.add(deletedList)
 		session.commit()
-		return redirect(url_for('allListings'))
+		return redirect(url_for('myListings'))
 	else:
 		return render_template('deletelisting.html',product_id=product_id,product=deletedProduct, listing=deletedList)
 

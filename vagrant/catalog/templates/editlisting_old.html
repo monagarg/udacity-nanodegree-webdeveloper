@@ -1,0 +1,25 @@
+<html>
+<body>
+<h1> Edit Listing </h1>
+
+<form action="{{url_for('editListing', user_id=user_id, product_id=product_id )}}" method = 'POST'>
+
+<p>Name: <input type='text' size='30' name='name' value="{{product.name}}">
+
+<p>Description: <input type='text' size='30' name='description' value="{{product.description}}">
+
+<p>Category: <input type='text' size='30' name='category' value="{{product.category}}">
+
+<p>Identifier: <input type='text' size='30' name='identifier' value="{{product.identifier}}">
+
+<p>Identifier Value: <input type='text' size='30' name='identifier_value' value="{{product.identifier_value}}">
+
+<p>Deposit: <input type='text' size='30' name='deposit' value="{{listing.deposit}}">
+
+<p>Max Days: <input type='text' size='30' name='max_days' value="{{listing.max_days}}">
+
+<input type='submit' value='Edit'>
+
+</form>
+</body>
+</html>

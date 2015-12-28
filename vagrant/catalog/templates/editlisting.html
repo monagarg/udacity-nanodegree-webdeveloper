@@ -1,25 +1,50 @@
-<html>
-<body>
-<h1> Edit Listing </h1>
+{% extends "main.html" %}
+{% block content %}
+{% include "header.html" %}
+	<div class="row divider green">
+		<div class="col-md-12"></div>
+	</div>
+	<div class="row banner menu">
+		<div class="col-md-11 col-md-offset-1 padding-none">
+			<h1>Edit {{product.name}}</h1>
+		</div>
+	</div>
 
-<form action="{{url_for('editListing', user_id=user_id, product_id=product_id )}}" method = 'POST'>
+	<div class="row">
+		<div class="col-md-6 col-md-offset-1 padding-top">
+			<form action="{{ url_for('editListing',product_id=product_id)}}" method = "post">
+				<div class="form-group">
+					<label for="name">Name:</label>
+					<input type ="text" class="form-control" name="name" value="{{product.name}}">
+					
+					<label for="name">Description:</label>
+					<input type ="text" class="form-control" name="description" value="{{product.description}}">
+					
+					<label for="name">Category:</label>
+					<input type ="text" class="form-control" name="category" value="{{product.category}}">
 
-<p>Name: <input type='text' size='30' name='name' value="{{product.name}}">
+					<label for="name">Identifier:</label>
+					<input type ="text" class="form-control" name="identifier" value="{{product.identifier}}">
 
-<p>Description: <input type='text' size='30' name='description' value="{{product.description}}">
+					<label for="name">Identifier Value:</label>
+					<input type ="text" class="form-control" name="identifier_value" value="{{product.identifier_value}}">
 
-<p>Category: <input type='text' size='30' name='category' value="{{product.category}}">
+					<label for="name">Deposit:</label>
+					<input type ="text" class="form-control" name="deposit" value="{{listing.deposit}}">
 
-<p>Identifier: <input type='text' size='30' name='identifier' value="{{product.identifier}}">
+					<label for="name">Days available to rent:</label>
+					<input type ="text" class="form-control" name="max_days" value="{{listing.max_days}}">
 
-<p>Identifier Value: <input type='text' size='30' name='identifier_value' value="{{product.identifier_value}}">
+					<div class="padding-bottom"></div>
+					<button type="submit" class="btn btn-default" id="submit" type="submit">
+					<span class="glyphicon glyphicon-ok" aria-hidden="true"></span>Save</button>
+					<a href = '{{url_for('myListings')}}'>
+						<button class="btn btn-default delete">
+						<span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Cancel</button>
+					</a>
+				</div>
+			</form>
+		</div>
+	</div>
 
-<p>Deposit: <input type='text' size='30' name='deposit' value="{{listing.deposit}}">
-
-<p>Max Days: <input type='text' size='30' name='max_days' value="{{listing.max_days}}">
-
-<input type='submit' value='Edit'>
-
-</form>
-</body>
-</html>
+{% endblock %}
