@@ -9,14 +9,14 @@
 			<h1>{{product.name}}</h1>
 		</div>
 	</div>
-<h2> Are you sure you want to delete {{product.name}}? </h2>
+<h2> Are you sure you want to list {{product.name}}? </h2>
 
 
 <div class="row">
-	<form action="{{ url_for('deleteProduct',product_id = product_id)}}" method = 'post'>
+	<form action="{{ url_for('enableProduct',product_id = product_id)}}" method = 'post'>
 		<div class="padding-bottom"></div>
 			<button type="submit" class="btn btn-default delete" id="submit" type="submit">
-				<span class="glyphicon glyphicon-trash" aria-hidden="true"></span>Delete
+				<span class="glyphicon glyphicon-ok" aria-hidden="true"></span>Confirm
 			</button>
 
 			<a href = '{{url_for('myListings')}}'>

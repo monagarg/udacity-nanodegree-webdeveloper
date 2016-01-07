@@ -10,7 +10,7 @@
 			<h1>{{product.name}}
 			<figure class="creator">
 				<img src="{{ url_for('static', filename='blank_user.gif') }}">
-				<figcaption>Menu creator's name goes here</figcaption>
+				<figcaption>{{user.name}}</figcaption>
 			</figure>
 			</h1>
 
@@ -24,10 +24,6 @@
 			<h2>{{product.identifier}}: {{product.identifier_value}}</h2>
 			<h3>Deposit: ${{listing.deposit}}</h3>
 			<h3>Days available to rent: {{listing.max_days}} days</h3>
-
-
-		<a href='{{url_for('editListing', product_id = product.product_id) }}'>Edit</a>
-		<a href='{{url_for('deleteProduct', product_id = product.product_id) }}'>Delete</a>
 
 	</div>
 {% endblock %}

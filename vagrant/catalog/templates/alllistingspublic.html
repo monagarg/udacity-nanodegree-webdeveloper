@@ -3,7 +3,7 @@
   <div class="row top-menu">
 	<div class="col-md-10"></div>
 	<div class="col-md-2 text-right">
-		<a href="{{url_for('showLogin')}}">Click Here to Log in </a>
+		<a href="{{url_for('showLogin')}}">Login to rent or share</a>
 	</div>
   </div>
   <div class="row divider blue">
@@ -12,15 +12,11 @@
   <div class="row banner main">
 	<div class="col-md-1"></div>
 	<div class="col-md-11 padding-none">
-	  <h1>Share Books</h1>
+	  <h1>Share Stuff</h1>
 	</div>
   </div>
 
-<div class="row padding-top padding-bottom">
-		<div class="col-md-1"></div>
-		<div class="col-md-10 padding-none"></div>
-		<div class="col-md-1"></div>
-</div>
+
 	{% for product in products %}
 		<a href = "{{url_for('productDetails', product_id = product.product_id)}}">
 			<div class="row">
